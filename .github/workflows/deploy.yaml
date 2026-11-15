@@ -16,10 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v4
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-        with:
-          python-version-file: ".python-version"
 
       - name: Install dependencies
         run: uv sync
@@ -38,18 +40,37 @@ jobs:
         run: python3 scripts/gen_game_data.py
 
       - name: Generate llms.txt
-        run: python3 scripts/gen_llms_txt.py
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: python3 scripts/gen_llms_txt.py --base-url "$SITE_URL"
 
       - name: Build site
-        run: uv run zensical build
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          uv run python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+          import yaml
+
+          # Use this fork's URLs without changing the checked-in configuration.
+          config = tomllib.loads(Path("zensical.toml").read_text())["project"]
+          repo_url = os.environ["REPOSITORY_URL"]
+          config["copyright"] = config["copyright"].replace(config["repo_url"], repo_url)
+          config["repo_url"] = repo_url
+          config["site_url"] = os.environ["SITE_URL"].rstrip("/") + "/"
+          Path("zensical.pages.yml").write_text(yaml.safe_dump(config, sort_keys=False))
+          PY
+          uv run zensical build --config-file zensical.pages.yml
 
       # Post-build: drop each page's Markdown source next to its rendered
       # HTML, so appending "index.md" to any page URL returns the source.
       - name: Emit raw Markdown pages
-        run: python3 scripts/gen_llms_txt.py --site-dir site
-
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v4
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: python3 scripts/gen_llms_txt.py --site-dir site --base-url "$SITE_URL"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
