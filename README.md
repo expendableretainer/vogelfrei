@@ -38,6 +38,21 @@ The game is a work in progress: some careers are still stubs.
 
 The book is Markdown in `docs/`, built into a static site with [Zensical](https://zensical.org). To preview it locally, install [uv](https://docs.astral.sh/uv/), then run `uv sync` and `uv run zensical serve`. Everything else about how the repository works is in [AGENTS.md](AGENTS.md).
 
+## Deploying your fork
+
+1. Enable GitHub Actions in your fork's **Actions** tab if prompted.
+2. In **Settings → Pages → Build and deployment**, set **Source** to
+   **GitHub Actions**. This is a one-time setting for each fork.
+3. Push to `master` or manually run **Deploy to GitHub Pages** from the
+   **Actions** tab.
+
+The workflow uses GitHub's `${{ github.repository }}` variable and the URL
+reported by `actions/configure-pages` to set the repository link, canonical
+site URL, and generated Markdown links. Forks need no username edits or
+upstream account credentials. Custom Pages domains use their configured URL
+automatically. The checked-in configuration and README links describe the
+upstream site; CI generates a deployment configuration for the current fork.
+
 ## License
 
 The rules text is Open Game Content under the [Open Game License 1.0a](LICENSE). The art, layout, and the Vogelfrei name are Product Identity.
